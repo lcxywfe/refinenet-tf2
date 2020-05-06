@@ -5,7 +5,7 @@ from tensorflow.keras.layers import Conv2D, ReLU, Add, MaxPool2D, UpSampling2D, 
 
 import numpy as np
 
-from resnet import resnet_101
+from .resnet import resnet_101
 
 kern_init = keras.initializers.he_normal()
 kern_reg = keras.regularizers.l2(1e-5)
@@ -141,7 +141,7 @@ def get_layer_by_name(model, name):
 
 
 class RefineNet(Model):
-    def __init__(self, input_shape, num_class):
+    def __init__(self, num_class):
         super().__init__()
         self.resnet101 = resnet_101()
 
@@ -191,6 +191,3 @@ class RefineNet(Model):
 
         return y
 
-
-refinenet = RefineNet((224, 224, 3), 27)
-refinenet(np.random.random((1, 224, 224, 3)).astype(np.float32))
