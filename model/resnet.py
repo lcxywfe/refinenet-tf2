@@ -27,7 +27,7 @@ class ResNet(tf.keras.Model):
                                             stride=2)
 
 
-    def call(self, inputs, training=None, mask=None):
+    def call(self, inputs, training=True):
         x = self.conv1(inputs)
         x = self.bn1(x, training=training)
         x = tf.nn.relu(x)

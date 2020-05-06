@@ -51,23 +51,23 @@ class ChainedResidualPooling(Model):
 
         self.add = Add(name=name+'sum')
 
-    def call(self, x):
+    def call(self, x, training=True):
         y0 = self.relu1(x)
 
         y1 = self.conv1(y0)
-        y1 = self.bn1(y1)
+        y1 = self.bn1(y1, training=training)
         y1 = self.pool1(y1)
 
         y2 = self.conv2(y1)
-        y2 = self.bn2(y2)
+        y2 = self.bn2(y2, training=training)
         y2 = self.pool2(y2)
 
         y3 = self.conv3(y2)
-        y3 = self.bn3(y3)
+        y3 = self.bn3(y3, training=training)
         y3 = self.pool3(y3)
 
         y4 = self.conv4(y3)
-        y4 = self.bn4(y4)
+        y4 = self.bn4(y4, training=training)
         y4 = self.pool4(y4)
 
         return self.add([y0, y1, y2, y3, y4])
@@ -85,13 +85,13 @@ class MultiResolutionFusion(Model):
 
         self.add = Add(name=name+'sum')
 
-    def call(self, high, low):
+    def call(self, high, low, training=True):
         low = self.conv_low(low)
-        low = self.bn_low(low)
+        low = self.bn_low(low, training=training)
         low = self.up_low(low)
 
         high = self.conv_high(high)
-        high = self.bn_high(high)
+        high = self.bn_high(high, training=training)
 
         return self.add([low, high])
 
@@ -115,11 +115,11 @@ class RefineBlock(Model):
             self.fuse_pooling = ChainedResidualPooling(n_filters = 256, name='rb_{}_crp_'.format(block))
             self.rcu_out = ResidualConvUnit(n_filters = 256, name='rb_{}_rcu_o1_'.format(block))
 
-    def call(self, high, low):
+    def call(self, high, low, training=True):
         if low is None:
             high = self.rcu1(high)
             high = self.rcu2(high)
-            high = self.fuse_pooling(high)
+            high = self.fuse_pooling(high, training=training)
             return self.rcu_out(high)
         else:
             high = self.rcu_high1(high)
@@ -128,8 +128,8 @@ class RefineBlock(Model):
             low = self.rcu_low1(low)
             low = self.rcu_low2(low)
 
-            fuse = self.fuse(high, low)
-            fuse = self.fuse_pooling(fuse)
+            fuse = self.fuse(high, low, training=training)
+            fuse = self.fuse_pooling(fuse, training=training)
 
             return self.rcu_out(fuse)
 
@@ -165,23 +165,23 @@ class RefineNet(Model):
         self.up = UpSampling2D(size=4, interpolation='bilinear', name='rf_up_o')
         self.conv_out = Conv2D(num_class, 1, activation = 'softmax', name='rf_pred')
 
-    def call(self, x):
-        high = self.resnet101(x)
+    def call(self, x, training=True):
+        high = self.resnet101(x, training=training)
         low = [None, None, None]
 
         high[0] = self.conv0(high[0])
-        high[0] = self.bn0(high[0])
+        high[0] = self.bn0(high[0], training=training)
         high[1] = self.conv1(high[1])
-        high[1] = self.bn1(high[1])
+        high[1] = self.bn1(high[1], training=training)
         high[2] = self.conv2(high[2])
-        high[2] = self.bn2(high[2])
+        high[2] = self.bn2(high[2], training=training)
         high[3] = self.conv3(high[3])
-        high[3] = self.bn3(high[3])
+        high[3] = self.bn3(high[3], training=training)
 
-        low[0] = self.rb0(high[0], None)
-        low[1] = self.rb1(high[1], low[0])
-        low[2] = self.rb2(high[2], low[1])
-        y = self.rb3(high[3], low[2])
+        low[0] = self.rb0(high[0], None, training=training)
+        low[1] = self.rb1(high[1], low[0], training=training)
+        low[2] = self.rb2(high[2], low[1], training=training)
+        y = self.rb3(high[3], low[2], training=training)
 
         y = self.rc0(y)
         y = self.rc1(y)
